@@ -1,0 +1,106 @@
+# generated: 2026-04-14
+# last_updated: 2026-04-14
+# project: Yurii_Krot@epam.com-Artifact-Hub
+# project_key: NOKEY
+# tracking_system: file-system
+# story_location: docs/implementation-artifacts
+
+# STATUS DEFINITIONS:
+# ==================
+# Epic Status:
+#   - backlog: Epic not yet started
+#   - in-progress: Epic actively being worked on
+#   - done: All stories in epic completed
+#
+# Epic Status Transitions:
+#   - backlog → in-progress: Automatically when first story is created (via create-story)
+#   - in-progress → done: Manually when all stories reach 'done' status
+#
+# Story Status:
+#   - backlog: Story only exists in epic file
+#   - ready-for-dev: Story file created in stories folder
+#   - in-progress: Developer actively working on implementation
+#   - review: Ready for code review (via Dev's code-review workflow)
+#   - done: Story completed
+#
+# Retrospective Status:
+#   - optional: Can be completed but not required
+#   - done: Retrospective has been completed
+#
+# WORKFLOW NOTES:
+# ===============
+# - Epic transitions to 'in-progress' automatically when first story is created
+# - Stories can be worked in parallel if team capacity allows
+# - Developer typically creates next story after previous one is 'done' to incorporate learnings
+# - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
+
+generated: '2026-04-14'
+last_updated: '2026-04-14'
+project: Yurii_Krot@epam.com-Artifact-Hub
+project_key: NOKEY
+tracking_system: file-system
+story_location: docs/implementation-artifacts
+
+development_status:
+  # Epic 1: Foundation & Infrastructure Setup
+  epic-1: in-progress
+  1-1-project-initialization-dependency-installation: review
+  1-2-database-schema-turso-integration: in-progress
+  1-3-clerk-authentication-route-protection: backlog
+  1-4-core-api-infrastructure: backlog
+  1-5-mcp-api-key-generation-revocation: backlog
+  epic-1-retrospective: optional
+
+  # Epic 2: Team Management
+  epic-2: backlog
+  2-1-team-creation-team-list: backlog
+  2-2-team-membership-management: backlog
+  2-3-team-settings-delete: backlog
+  epic-2-retrospective: optional
+
+  # Epic 3: Artifact Publishing (Web)
+  epic-3: backlog
+  3-1-file-upload-api-authenticated-file-proxy: backlog
+  3-2-publish-form-ui: backlog
+  3-3-ai-enrichment-pipeline: backlog
+  epic-3-retrospective: optional
+
+  # Epic 4: Gallery & Discovery
+  epic-4: backlog
+  4-1-gallery-page-artifactrow-component: backlog
+  4-2-filter-controls: backlog
+  4-3-keyword-search: backlog
+  epic-4-retrospective: optional
+
+  # Epic 5: Artifact Detail & Preview
+  epic-5: backlog
+  5-1-artifact-detail-page-access-control: backlog
+  5-2-format-specific-preview-renderer: backlog
+  5-3-tags-summary-editing-ai-regeneration: backlog
+  epic-5-retrospective: optional
+
+  # Epic 6: Comments & Feedback
+  epic-6: backlog
+  6-1-comment-api-data-model: backlog
+  6-2-comment-thread-ui: backlog
+  epic-6-retrospective: optional
+
+  # Epic 7: MCP Server
+  epic-7: backlog
+  7-1-mcp-server-foundation-api-key-auth: backlog
+  7-2-publish-artifact-tool: backlog
+  7-3-search-artifacts-get-artifact-tools: backlog
+  7-4-mcp-build-claude-desktop-config-documentation: backlog
+  epic-7-retrospective: optional
+
+  # Epic 8: Admin Governance
+  epic-8: backlog
+  8-1-admin-artifact-deletion: backlog
+  epic-8-retrospective: optional
+
+  # Epic 9: UX Polish, Accessibility & Deployment
+  epic-9: backlog
+  9-1-empty-states-toast-notifications-error-ux: backlog
+  9-2-responsive-layout-accessibility: backlog
+  9-3-vercel-deployment-environment-setup-writeup: backlog
+  epic-9-retrospective: optional
