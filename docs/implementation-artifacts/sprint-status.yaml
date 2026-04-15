@@ -56,7 +56,8 @@ development_status:
   2-1-team-creation-team-list: done
   2-2-team-membership-management: done
   2-3-team-settings-delete: done
-  2-4-email-based-team-invitations: ready-for-dev
+  2-4-email-based-team-invitations: done
+  2-5-pending-team-invitations-ui: done
   epic-2-retrospective: optional
 
   # Epic 3: Artifact Publishing (Web)

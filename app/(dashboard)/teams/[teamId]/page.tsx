@@ -3,7 +3,7 @@ import { auth, clerkClient } from '@clerk/nextjs/server'
 import { redirect } from 'next/navigation'
 import { and, eq } from 'drizzle-orm'
 import { db } from '@/lib/db'
-import { teams, teamMemberships } from '@/lib/schema'
+import { teams, teamInvitations, teamMemberships } from '@/lib/schema'
 import { TeamMembers } from '@/components/team-members'
 import { TeamSettings } from '@/components/team-settings'
 
@@ -47,6 +47,21 @@ export default async function TeamDetailPage({ params }: Props) {
     .from(teamMemberships)
     .where(eq(teamMemberships.teamId, teamId))
 
+  const pendingInvitations = await db
+    .select({
+      id: teamInvitations.id,
+      teamId: teamInvitations.teamId,
+      email: teamInvitations.email,
+      role: teamInvitations.role,
+      status: teamInvitations.status,
+      invitedBy: teamInvitations.invitedBy,
+      createdAt: teamInvitations.createdAt,
+      expiresAt: teamInvitations.expiresAt,
+      acceptedAt: teamInvitations.acceptedAt,
+    })
+    .from(teamInvitations)
+    .where(and(eq(teamInvitations.teamId, teamId), eq(teamInvitations.status, 'pending')))
+
   const isAdmin = membership.role === 'admin'
 
   // Batch-resolve Clerk display names for all members
@@ -68,6 +83,13 @@ export default async function TeamDetailPage({ params }: Props) {
     displayName: displayNames[m.userId] ?? m.userId,
   }))
 
+  const serializedPendingInvitations = pendingInvitations.map(invitation => ({
+    ...invitation,
+    createdAt: invitation.createdAt.getTime(),
+    expiresAt: invitation.expiresAt ? invitation.expiresAt.getTime() : null,
+    acceptedAt: invitation.acceptedAt ? invitation.acceptedAt.getTime() : null,
+  }))
+
   return (
     <div className="mx-auto max-w-screen-xl px-4 py-8">
       <div className="mb-6">
@@ -87,6 +109,7 @@ export default async function TeamDetailPage({ params }: Props) {
           isAdmin={isAdmin}
           currentUserId={userId}
           initialMembers={serializedMembers}
+          initialPendingInvitations={serializedPendingInvitations}
         />
       </div>
 

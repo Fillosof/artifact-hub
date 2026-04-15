@@ -3,8 +3,10 @@ import { Suspense } from 'react'
 import { notFound } from 'next/navigation'
 import { auth } from '@clerk/nextjs/server'
 import { eq, and } from 'drizzle-orm'
+import { Download } from 'lucide-react'
 import { db } from '@/lib/db'
 import { artifacts, artifactTags, teams, teamMemberships } from '@/lib/schema'
+import { getUserDisplayName } from '@/lib/user-display'
 import { Skeleton } from '@/components/ui/skeleton'
 import { DocumentPreviewer } from '@/components/document-previewer'
 import { TagsEditor } from '@/components/tags-editor'
@@ -106,7 +108,8 @@ export default async function ArtifactDetailPage({ params }: ArtifactDetailPageP
 
   const tags = tagRows.map((r) => r.tag)
   const isPending = artifact.enrichmentStatus === 'pending'
-  const initials = artifact.createdBy.slice(0, 2).toUpperCase()
+  const authorDisplayName = await getUserDisplayName(artifact.createdBy)
+  const initials = authorDisplayName.slice(0, 2).toUpperCase()
   const isOwner = userId === artifact.createdBy
   const isAdmin = membership.role === 'admin'
   const canEditTags = isOwner || isAdmin
@@ -117,14 +120,24 @@ export default async function ArtifactDetailPage({ params }: ArtifactDetailPageP
         <ToastBanner />
       </Suspense>
 
-      {/* Title row with admin delete action */}
+      {/* Title row with download + admin delete actions */}
       <div className="mb-4 flex items-start justify-between gap-4">
         <h1 className="text-2xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-50">
           {artifact.title}
         </h1>
-        {isAdmin && (
-          <DeleteArtifactButton artifactId={artifact.id} artifactTitle={artifact.title} />
-        )}
+        <div className="flex shrink-0 items-center gap-2">
+          <a
+            href={`/api/files/${artifact.id}`}
+            download={artifact.fileName}
+            className="inline-flex items-center gap-1.5 rounded-md border border-zinc-200 px-3 py-1.5 text-xs font-medium text-zinc-700 transition-colors hover:bg-zinc-100 hover:text-zinc-900 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800 dark:hover:text-zinc-100"
+          >
+            <Download className="h-3.5 w-3.5" />
+            Download
+          </a>
+          {isAdmin && (
+            <DeleteArtifactButton artifactId={artifact.id} artifactTitle={artifact.title} />
+          )}
+        </div>
       </div>
 
       {/* Meta row */}
@@ -133,7 +146,7 @@ export default async function ArtifactDetailPage({ params }: ArtifactDetailPageP
           <span className="flex h-7 w-7 items-center justify-center rounded-full bg-zinc-200 text-xs font-semibold text-zinc-700 dark:bg-zinc-700 dark:text-zinc-300">
             {initials}
           </span>
-          <span>{artifact.createdBy}</span>
+          <span>{authorDisplayName}</span>
         </div>
         <span>&middot;</span>
         <time dateTime={new Date(artifact.createdAt).toISOString()}>

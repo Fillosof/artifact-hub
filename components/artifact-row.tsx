@@ -9,6 +9,7 @@ interface ArtifactRowProps {
     'id' | 'title' | 'fileType' | 'enrichmentStatus' | 'summary' | 'createdAt' | 'createdBy'
   >
   tags: string[]
+  authorName?: string
 }
 
 function FileTypeIcon({
@@ -47,9 +48,10 @@ function formatRelativeDate(date: Date): string {
   return `${days}d ago`
 }
 
-export function ArtifactRow({ artifact, tags }: ArtifactRowProps) {
+export function ArtifactRow({ artifact, tags, authorName }: ArtifactRowProps) {
   const isPending = artifact.enrichmentStatus === 'pending'
-  const initials = artifact.createdBy.slice(0, 2).toUpperCase()
+  const displayName = authorName || artifact.createdBy
+  const initials = displayName.slice(0, 2).toUpperCase()
 
   return (
     <Link
@@ -75,7 +77,7 @@ export function ArtifactRow({ artifact, tags }: ArtifactRowProps) {
         )}
       </div>
 
-      {/* Right: tags + date + avatar */}
+      {/* Right: tags + date + author */}
       <div className="flex shrink-0 items-center gap-3">
         {isPending ? (
           <div className="flex gap-1">
@@ -106,12 +108,14 @@ export function ArtifactRow({ artifact, tags }: ArtifactRowProps) {
           {formatRelativeDate(artifact.createdAt instanceof Date ? artifact.createdAt : new Date(artifact.createdAt))}
         </span>
 
-        <span
-          className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-zinc-200 text-xs font-medium text-zinc-700 dark:bg-zinc-700 dark:text-zinc-300"
-          title={`Published by ${artifact.createdBy}`}
-        >
-          {initials}
-        </span>
+        <div className="flex items-center gap-2">
+          <span
+            className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-zinc-200 text-xs font-medium text-zinc-700 dark:bg-zinc-700 dark:text-zinc-300"
+            title={`Published by ${displayName}`}
+          >
+            {initials}
+          </span>
+        </div>
       </div>
     </Link>
   )

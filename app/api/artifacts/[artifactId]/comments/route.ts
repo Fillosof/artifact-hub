@@ -1,10 +1,10 @@
 import { eq, asc } from 'drizzle-orm'
 import { NextResponse } from 'next/server'
 import { nanoid } from 'nanoid'
-import { clerkClient } from '@clerk/nextjs/server'
 import { db } from '@/lib/db'
 import { artifacts, comments } from '@/lib/schema'
 import { resolveAuth, AuthError } from '@/lib/auth'
+import { getUserDisplayName } from '@/lib/user-display'
 
 // POST /api/artifacts/[artifactId]/comments — create a comment
 export async function POST(
@@ -129,21 +129,14 @@ export async function GET(
     .where(eq(comments.artifactId, artifactId))
     .orderBy(asc(comments.createdAt))
 
-  // Resolve display names via Clerk (batch by unique userId)
+  // Resolve display names for all unique user IDs
   const uniqueUserIds = [...new Set(rows.map((r) => r.userId))]
   const displayNames: Record<string, string> = {}
 
   if (uniqueUserIds.length > 0) {
-    const client = await clerkClient()
     await Promise.all(
       uniqueUserIds.map(async (uid) => {
-        try {
-          const user = await client.users.getUser(uid)
-          const name = [user.firstName, user.lastName].filter(Boolean).join(' ').trim()
-          displayNames[uid] = name || user.emailAddresses[0]?.emailAddress || uid
-        } catch {
-          displayNames[uid] = uid
-        }
+        displayNames[uid] = await getUserDisplayName(uid)
       }),
     )
   }

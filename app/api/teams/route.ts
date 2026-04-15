@@ -1,11 +1,13 @@
 import { nanoid } from 'nanoid'
-import { eq } from 'drizzle-orm'
+import { eq, and } from 'drizzle-orm'
+import { currentUser } from '@clerk/nextjs/server'
 import { NextResponse } from 'next/server'
 import { db } from '@/lib/db'
-import { teams, teamMemberships } from '@/lib/schema'
+import { teams, teamMemberships, teamInvitations } from '@/lib/schema'
 import { resolveAuth, AuthError } from '@/lib/auth'
+import { findAndAcceptInvitations, normalizeEmail } from '@/lib/invitations'
 
-// GET /api/teams — list all teams the authenticated user belongs to (with their role)
+// GET /api/teams — list all teams the authenticated user belongs to (with their role) + pending invitations
 export async function GET(request: Request) {
   let userId: string
   try {
@@ -17,7 +19,22 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: 'Internal error', code: 'INTERNAL_ERROR' }, { status: 500 })
   }
 
+  let primaryEmail: string | undefined
   try {
+    const user = await currentUser()
+    primaryEmail =
+      user?.emailAddresses.find((email) => email.id === user.primaryEmailAddressId)?.emailAddress
+      ?? user?.emailAddresses[0]?.emailAddress
+
+    if (primaryEmail) {
+      await findAndAcceptInvitations(primaryEmail, userId)
+    }
+  } catch (err) {
+    console.error('[GET /api/teams] invitation hydration failed:', err)
+  }
+
+  try {
+    // Query active teams
     const rows = await db
       .select({
         id: teams.id,
@@ -31,7 +48,61 @@ export async function GET(request: Request) {
       .innerJoin(teams, eq(teamMemberships.teamId, teams.id))
       .where(eq(teamMemberships.userId, userId))
 
-    return NextResponse.json({ teams: rows })
+    // Query pending invitations for this email
+    type PendingInviteRow = {
+      id: string
+      teamId: string
+      email: string
+      role: 'member' | 'admin'
+      status: 'pending' | 'accepted'
+      invitedBy: string
+      createdAt: Date
+      expiresAt: Date | null
+      acceptedAt: Date | null
+      teamName: string
+    }
+
+    let pendingInvites: Array<Omit<PendingInviteRow, 'createdAt' | 'expiresAt' | 'acceptedAt'> & {
+      createdAt: number
+      expiresAt: number | null
+      acceptedAt: number | null
+    }> = []
+    if (primaryEmail) {
+      const normalizedEmail = normalizeEmail(primaryEmail)
+      const dbRows = await db
+        .select({
+          id: teamInvitations.id,
+          teamId: teamInvitations.teamId,
+          email: teamInvitations.email,
+          role: teamInvitations.role,
+          status: teamInvitations.status,
+          invitedBy: teamInvitations.invitedBy,
+          createdAt: teamInvitations.createdAt,
+          expiresAt: teamInvitations.expiresAt,
+          acceptedAt: teamInvitations.acceptedAt,
+          teamName: teams.name,
+        })
+        .from(teamInvitations)
+        .innerJoin(teams, eq(teamInvitations.teamId, teams.id))
+        .where(
+          and(
+            eq(teamInvitations.email, normalizedEmail),
+            eq(teamInvitations.status, 'pending')
+          )
+        )
+
+      pendingInvites = dbRows.map((row) => ({
+        ...row,
+        createdAt: row.createdAt.getTime(),
+        expiresAt: row.expiresAt?.getTime() ?? null,
+        acceptedAt: row.acceptedAt?.getTime() ?? null,
+      }))
+    }
+
+    return NextResponse.json({
+      teams: rows,
+      pendingInvitations: pendingInvites,
+    })
   } catch (err) {
     console.error('[GET /api/teams] error:', err)
     return NextResponse.json({ error: 'Internal error', code: 'INTERNAL_ERROR' }, { status: 500 })

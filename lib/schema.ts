@@ -1,3 +1,4 @@
+import { sql } from 'drizzle-orm'
 import { text, integer, sqliteTable, primaryKey, uniqueIndex, index } from 'drizzle-orm/sqlite-core'
 
 export const teams = sqliteTable('teams', {
@@ -17,6 +18,24 @@ export const teamMemberships = sqliteTable('team_memberships', {
 }, (t) => ({
   uniqTeamUser: uniqueIndex('idx_team_memberships_team_user').on(t.teamId, t.userId),
   idxUserId:    index('idx_team_memberships_user_id').on(t.userId),
+}))
+
+export const teamInvitations = sqliteTable('team_invitations', {
+  id:         text('id').primaryKey(),
+  teamId:     text('team_id').notNull().references(() => teams.id, { onDelete: 'cascade' }),
+  email:      text('email').notNull(),
+  role:       text('role', { enum: ['member', 'admin'] }).notNull().default('member'),
+  status:     text('status', { enum: ['pending', 'accepted'] }).notNull().default('pending'),
+  invitedBy:  text('invited_by').notNull(),
+  createdAt:  integer('created_at', { mode: 'timestamp_ms' }).notNull(),
+  expiresAt:  integer('expires_at', { mode: 'timestamp_ms' }),
+  acceptedAt: integer('accepted_at', { mode: 'timestamp_ms' }),
+}, (t) => ({
+  uniqPendingInvite: uniqueIndex('idx_team_invitations_pending')
+    .on(t.teamId, t.email)
+    .where(sql`status = 'pending'`),
+  idxEmail:  index('idx_team_invitations_email').on(t.email),
+  idxTeamId: index('idx_team_invitations_team_id').on(t.teamId),
 }))
 
 export const artifacts = sqliteTable('artifacts', {

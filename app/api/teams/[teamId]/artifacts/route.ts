@@ -6,6 +6,7 @@ import { db } from '@/lib/db'
 import { artifacts, artifactTags, teamMemberships } from '@/lib/schema'
 import { resolveAuth, AuthError } from '@/lib/auth'
 import { normalizeTags } from '@/lib/utils'
+import { enrichArtifact } from '@/lib/enrichment'
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024 // 10 MB
 
@@ -275,14 +276,10 @@ export async function POST(
     responseSummary = normalizedSummary
     responseEnrichmentStatus = 'complete'
   } else {
-    // Fire-and-forget AI enrichment — must not delay the 201 response
-    void fetch(`${process.env.NEXT_PUBLIC_APP_URL}/api/enrich`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-Enrich-Secret': process.env.ENRICH_SECRET ?? '',
-      },
-      body: JSON.stringify({ artifactId: id }),
+    // Fire-and-forget AI enrichment — direct call, must not delay the 201 response.
+    // enrichArtifact sets enrichmentStatus='failed' on error so the artifact stays usable.
+    void enrichArtifact(id).catch((err: unknown) => {
+      console.error('[POST /api/teams/[teamId]/artifacts] enrichment failed:', err)
     })
   }
 

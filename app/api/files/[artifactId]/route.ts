@@ -67,9 +67,17 @@ export async function GET(
   }
 
   const safeFileName = artifact.fileName.replace(/"/g, '')
+
+  // Serve previewable types inline so browsers render them; everything else as attachment
+  const inlineTypes = ['image/', 'text/', 'application/pdf', 'text/html']
+  const shouldServeInline = inlineTypes.some((prefix) => artifact.fileType.startsWith(prefix))
+  const disposition = shouldServeInline
+    ? `inline; filename="${safeFileName}"`
+    : `attachment; filename="${safeFileName}"`
+
   const headers = new Headers({
     'Content-Type': artifact.fileType,
-    'Content-Disposition': `attachment; filename="${safeFileName}"`,
+    'Content-Disposition': disposition,
     'Cache-Control': 'private, max-age=3600',
   })
 

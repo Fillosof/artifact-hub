@@ -32,7 +32,9 @@ interface ApiSuccessResponse {
 export function PublishDialog({ open, onClose, file, teamId, onSuccess }: PublishDialogProps) {
   const [title, setTitle] = useState('')
   const [sourceUrl, setSourceUrl] = useState('')
-  const [showSourceUrl, setShowSourceUrl] = useState(false)
+  const [tags, setTags] = useState('')
+  const [summary, setSummary] = useState('')
+  const [showDetails, setShowDetails] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const titleRef = useRef<HTMLInputElement>(null)
@@ -47,7 +49,9 @@ export function PublishDialog({ open, onClose, file, teamId, onSuccess }: Publis
     } else {
       setTitle('')
       setSourceUrl('')
-      setShowSourceUrl(false)
+      setTags('')
+      setSummary('')
+      setShowDetails(false)
       setError(null)
       setIsLoading(false)
     }
@@ -66,6 +70,12 @@ export function PublishDialog({ open, onClose, file, teamId, onSuccess }: Publis
       formData.append('title', title.trim())
       if (sourceUrl.trim()) {
         formData.append('sourceUrl', sourceUrl.trim())
+      }
+      if (tags.trim()) {
+        formData.append('tags', tags)
+      }
+      if (summary.trim()) {
+        formData.append('summary', summary.trim())
       }
 
       try {
@@ -90,7 +100,7 @@ export function PublishDialog({ open, onClose, file, teamId, onSuccess }: Publis
         setIsLoading(false)
       }
     },
-    [file, title, sourceUrl, isLoading, teamId, onSuccess],
+    [file, title, sourceUrl, tags, summary, isLoading, teamId, onSuccess],
   )
 
   const isSubmitDisabled = !file || !title.trim() || isLoading
@@ -131,27 +141,77 @@ export function PublishDialog({ open, onClose, file, teamId, onSuccess }: Publis
             />
           </div>
 
-          {/* Source URL — collapsible optional field */}
-          <div className="flex flex-col gap-1.5">
+          {/* Add details — collapsible optional section */}
+          <div className="flex flex-col gap-2">
             <button
               type="button"
-              onClick={() => setShowSourceUrl((prev) => !prev)}
+              onClick={() => setShowDetails((prev) => !prev)}
               className="flex items-center gap-1 text-xs text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300"
-              aria-expanded={showSourceUrl}
+              aria-expanded={showDetails}
             >
               <ChevronDownIcon
-                className={cn('size-3.5 transition-transform', showSourceUrl && 'rotate-180')}
+                className={cn('size-3.5 transition-transform', showDetails && 'rotate-180')}
               />
-              Add source URL (optional)
+              Add details (optional)
             </button>
-            {showSourceUrl && (
-              <input
-                type="url"
-                value={sourceUrl}
-                onChange={(e) => setSourceUrl(e.target.value)}
-                placeholder="https://..."
-                className="rounded-md border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-900 placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-zinc-500 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:placeholder-zinc-600"
-              />
+
+            {showDetails && (
+              <div className="flex flex-col gap-3 rounded-md border border-zinc-200 bg-zinc-50 p-3 dark:border-zinc-700 dark:bg-zinc-900/50">
+                {/* Source URL */}
+                <div className="flex flex-col gap-1">
+                  <label
+                    htmlFor="artifact-source-url"
+                    className="text-xs font-medium text-zinc-600 dark:text-zinc-400"
+                  >
+                    Source URL
+                  </label>
+                  <input
+                    id="artifact-source-url"
+                    type="url"
+                    value={sourceUrl}
+                    onChange={(e) => setSourceUrl(e.target.value)}
+                    placeholder="https://..."
+                    className="rounded-md border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-900 placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-zinc-500 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:placeholder-zinc-600"
+                  />
+                </div>
+
+                {/* Tags */}
+                <div className="flex flex-col gap-1">
+                  <label
+                    htmlFor="artifact-tags"
+                    className="text-xs font-medium text-zinc-600 dark:text-zinc-400"
+                  >
+                    Tags
+                  </label>
+                  <input
+                    id="artifact-tags"
+                    type="text"
+                    value={tags}
+                    onChange={(e) => setTags(e.target.value)}
+                    placeholder="e.g. report, q1, marketing"
+                    className="rounded-md border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-900 placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-zinc-500 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:placeholder-zinc-600"
+                  />
+                  <p className="text-xs text-zinc-400">Comma-separated. AI enrichment runs if left empty.</p>
+                </div>
+
+                {/* Summary */}
+                <div className="flex flex-col gap-1">
+                  <label
+                    htmlFor="artifact-summary"
+                    className="text-xs font-medium text-zinc-600 dark:text-zinc-400"
+                  >
+                    Summary
+                  </label>
+                  <textarea
+                    id="artifact-summary"
+                    value={summary}
+                    onChange={(e) => setSummary(e.target.value)}
+                    placeholder="Brief description of the artifact…"
+                    rows={3}
+                    className="rounded-md border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-900 placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-zinc-500 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:placeholder-zinc-600"
+                  />
+                </div>
+              </div>
             )}
           </div>
 

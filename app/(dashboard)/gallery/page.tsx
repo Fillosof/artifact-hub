@@ -10,6 +10,7 @@ import { GalleryActions } from '@/components/gallery-actions'
 import { GalleryLayout } from '@/components/gallery-layout'
 import { ToastBanner } from '@/components/toast-banner'
 import { GalleryEmptyState } from '@/components/gallery-empty-state'
+import { getUserDisplayName } from '@/lib/user-display'
 import Link from 'next/link'
 
 interface GalleryPageProps {
@@ -58,6 +59,7 @@ export default async function GalleryPage({ searchParams }: GalleryPageProps) {
     summary: string | null
     createdAt: Date
     createdBy: string
+    authorName?: string
   }
   let artifactList: ArtifactListItem[] = []
   let tagMap: Record<string, string[]> = {}
@@ -105,6 +107,20 @@ export default async function GalleryPage({ searchParams }: GalleryPageProps) {
         acc[row.artifactId].push(row.tag)
         return acc
       }, {})
+
+      // Fetch display names for all unique createdBy values
+      const uniqueUserIds = [...new Set(artifactList.map((a) => a.createdBy))]
+      const displayNameMap: Record<string, string> = {}
+      await Promise.all(
+        uniqueUserIds.map(async (uid) => {
+          displayNameMap[uid] = await getUserDisplayName(uid)
+        }),
+      )
+      // Attach display names to artifacts
+      artifactList = artifactList.map((a) => ({
+        ...a,
+        authorName: displayNameMap[a.createdBy],
+      }))
     }
   }
 
@@ -201,6 +217,7 @@ export default async function GalleryPage({ searchParams }: GalleryPageProps) {
                 key={artifact.id}
                 artifact={artifact}
                 tags={tagMap[artifact.id] ?? []}
+                authorName={artifact.authorName}
               />
             ))}
           </div>

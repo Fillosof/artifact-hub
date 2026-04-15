@@ -3,6 +3,7 @@ import { NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { artifacts, artifactTags } from '@/lib/schema'
 import { resolveAuth, AuthError } from '@/lib/auth'
+import { enrichArtifact } from '@/lib/enrichment'
 
 // POST /api/artifacts/[artifactId]/enrich — trigger AI re-enrichment (owner only)
 export async function POST(
@@ -51,17 +52,10 @@ export async function POST(
   await db.delete(artifactTags).where(eq(artifactTags.artifactId, artifactId))
   await db.update(artifacts).set({ enrichmentStatus: 'pending', summary: null }).where(eq(artifacts.id, artifactId))
 
-  // Fire-and-forget enrichment (identical pattern to publish route)
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? ''
-  void fetch(`${appUrl}/api/enrich`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'X-Enrich-Secret': process.env.ENRICH_SECRET ?? '',
-    },
-    body: JSON.stringify({ artifactId }),
-  }).catch((err) => {
-    console.error('[POST /api/artifacts/[artifactId]/enrich] fire-and-forget failed:', err)
+  // Fire-and-forget enrichment — direct call, must not delay the response.
+  // enrichArtifact sets enrichmentStatus='failed' on error so the artifact stays usable.
+  void enrichArtifact(artifactId).catch((err: unknown) => {
+    console.error('[POST /api/artifacts/[artifactId]/enrich] enrichment failed:', err)
   })
 
   return NextResponse.json({ enrichmentStatus: 'pending' })

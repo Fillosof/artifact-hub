@@ -123,7 +123,7 @@ export function SummaryEditor({
       ) : (
         <div className="flex flex-col gap-2">
           <div className="flex items-start gap-2">
-            <p className="flex-1 text-sm leading-relaxed text-zinc-700 dark:text-zinc-300">
+            <p className="flex-wrap text-sm leading-relaxed text-zinc-700 dark:text-zinc-300">
               {summary ?? <span className="text-zinc-400">No summary available.</span>}
             </p>
             {isOwner && !isEditing && (

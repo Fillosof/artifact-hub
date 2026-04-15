@@ -6,6 +6,11 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 /**
+ * Fetch a user's display name from Clerk by userId.
+ * Returns firstName + lastName (space-separated), or email, or the userId as fallback.
+ * Wrapped in a try/catch; returns the userId if any error occurs.
+ */
+/**
  * Return a human-readable relative time string for a Unix-ms timestamp.
  * e.g. "just now", "5 minutes ago", "2 hours ago", "3 days ago"
  */

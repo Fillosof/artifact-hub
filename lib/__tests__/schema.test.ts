@@ -2,6 +2,7 @@ import { describe, it, expect, assertType } from 'vitest'
 import {
   teams,
   teamMemberships,
+  teamInvitations,
   artifacts,
   artifactTags,
   comments,
@@ -52,12 +53,14 @@ describe('schema type inference', () => {
     type TeamId = typeof teams.$inferSelect['id']
     type ArtifactId = typeof artifacts.$inferSelect['id']
     type MembershipId = typeof teamMemberships.$inferSelect['id']
+    type InvitationId = typeof teamInvitations.$inferSelect['id']
     type CommentId = typeof comments.$inferSelect['id']
     type ApiKeyId = typeof apiKeys.$inferSelect['id']
 
     assertType<string>('' as TeamId)
     assertType<string>('' as ArtifactId)
     assertType<string>('' as MembershipId)
+    assertType<string>('' as InvitationId)
     assertType<string>('' as CommentId)
     assertType<string>('' as ApiKeyId)
   })
@@ -70,6 +73,14 @@ describe('schema type inference', () => {
   it('teamMemberships role is narrowed to the correct union type', () => {
     type Role = typeof teamMemberships.$inferSelect['role']
     assertType<'member' | 'admin'>('member' as Role)
+  })
+
+  it('teamInvitations role and status are narrowed to expected unions', () => {
+    type Role = typeof teamInvitations.$inferSelect['role']
+    type Status = typeof teamInvitations.$inferSelect['status']
+
+    assertType<'member' | 'admin'>('member' as Role)
+    assertType<'pending' | 'accepted'>('pending' as Status)
   })
 
   it('artifactTags has no surrogate id column — only artifactId and tag', () => {

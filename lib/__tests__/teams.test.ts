@@ -16,6 +16,15 @@ vi.mock('@/lib/auth', () => ({
   },
 }))
 
+vi.mock('@clerk/nextjs/server', () => ({
+  currentUser: vi.fn(),
+}))
+
+vi.mock('@/lib/invitations', () => ({
+  findAndAcceptInvitations: vi.fn(),
+  normalizeEmail: vi.fn((email: string) => email.toLowerCase().trim()),
+}))
+
 vi.mock('@/lib/db', () => ({
   db: {
     select: vi.fn(),
@@ -34,10 +43,14 @@ vi.mock('nanoid', () => ({
 
 import { resolveAuth, AuthError } from '@/lib/auth'
 import { db } from '@/lib/db'
+import { currentUser } from '@clerk/nextjs/server'
+import { findAndAcceptInvitations } from '@/lib/invitations'
 
 const mockResolveAuth = vi.mocked(resolveAuth)
 const mockDbSelect = vi.mocked(db.select)
 const mockDbInsert = vi.mocked(db.insert)
+const mockCurrentUser = vi.mocked(currentUser)
+const mockFindAndAcceptInvitations = vi.mocked(findAndAcceptInvitations)
 
 /** Helper: mock db.select().from().innerJoin().where() → resolvedValue (used by GET /api/teams) */
 function mockSelectJoinWhere(result: unknown[]) {
@@ -82,7 +95,8 @@ function makeRequest(method: string, body?: unknown): Request {
 }
 
 beforeEach(() => {
-  vi.clearAllMocks()
+  vi.resetAllMocks()
+  mockCurrentUser.mockResolvedValue(null)
 })
 
 async function importRoute() {
@@ -108,6 +122,23 @@ describe('GET /api/teams — unauthenticated', () => {
 })
 
 describe('GET /api/teams — authenticated', () => {
+  it('hydrates pending invitations when current user email is available', async () => {
+    mockResolveAuth.mockResolvedValueOnce({ userId: 'user_1', teamIds: ['team_1'] })
+    mockCurrentUser.mockResolvedValueOnce({
+      primaryEmailAddressId: 'email_1',
+      emailAddresses: [{ id: 'email_1', emailAddress: 'User@Example.com' }],
+    } as Awaited<ReturnType<typeof currentUser>>)
+    // Mock two select calls: one for teams, one for pending invitations
+    mockSelectJoinWhere([]) // teams
+    mockSelectJoinWhere([]) // pending invitations
+
+    const { GET } = await importRoute()
+    const res = await GET(makeRequest('GET'))
+
+    expect(res.status).toBe(200)
+    expect(mockFindAndAcceptInvitations).toHaveBeenCalledWith('User@Example.com', 'user_1')
+  })
+
   it('returns teams array with role for the user', async () => {
     mockResolveAuth.mockResolvedValueOnce({ userId: 'user_1', teamIds: ['team_1'] })
     mockSelectJoinWhere([
@@ -120,6 +151,8 @@ describe('GET /api/teams — authenticated', () => {
         role: 'admin',
       },
     ])
+    // Mock pending invitations query
+    mockSelectJoinWhere([])
 
     const { GET } = await importRoute()
     const res = await GET(makeRequest('GET'))
@@ -132,7 +165,8 @@ describe('GET /api/teams — authenticated', () => {
 
   it('returns empty array when user belongs to no teams', async () => {
     mockResolveAuth.mockResolvedValueOnce({ userId: 'user_2', teamIds: [] })
-    mockSelectJoinWhere([])
+    mockSelectJoinWhere([]) // teams
+    mockSelectJoinWhere([]) // pending invitations
 
     const { GET } = await importRoute()
     const res = await GET(makeRequest('GET'))
@@ -144,7 +178,8 @@ describe('GET /api/teams — authenticated', () => {
   it('never returns teams the user does not belong to', async () => {
     mockResolveAuth.mockResolvedValueOnce({ userId: 'user_3', teamIds: [] })
     // The mock returns an empty result — the query is already team-scoped by userId
-    mockSelectJoinWhere([])
+    mockSelectJoinWhere([]) // teams
+    mockSelectJoinWhere([]) // pending invitations
 
     const { GET } = await importRoute()
     const res = await GET(makeRequest('GET'))

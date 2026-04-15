@@ -24,6 +24,10 @@ vi.mock('@/lib/db', () => ({
   },
 }))
 
+vi.mock('@/lib/enrichment', () => ({
+  enrichArtifact: vi.fn().mockResolvedValue(undefined),
+}))
+
 vi.mock('drizzle-orm', () => ({
   eq: vi.fn((_c: unknown, _v: unknown) => ({ _c, _v })),
   and: vi.fn((...a: unknown[]) => a),
@@ -44,12 +48,14 @@ vi.stubGlobal('fetch', mockFetch)
 import { resolveAuth, AuthError } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { put } from '@vercel/blob'
+import { enrichArtifact } from '@/lib/enrichment'
 
 const mockResolveAuth = vi.mocked(resolveAuth)
 const mockDbSelect = vi.mocked(db.select)
 const mockDbInsert = vi.mocked(db.insert)
 const mockDbUpdate = vi.mocked(db.update)
 const mockPut = vi.mocked(put)
+const mockEnrichArtifact = vi.mocked(enrichArtifact)
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -190,8 +196,7 @@ describe('POST /api/teams/[teamId]/artifacts — validation', () => {
 })
 
 describe('POST /api/teams/[teamId]/artifacts — success', () => {
-  it('returns 201 with artifact shape (no fileUrl) and fires enrichment fetch', async () => {
-    process.env.NEXT_PUBLIC_APP_URL = 'https://app.example.com'
+  it('returns 201 with artifact shape (no fileUrl) and fires enrichment', async () => {
     process.env.ENRICH_SECRET = 'test-secret'
     mockResolveAuth.mockResolvedValueOnce({ userId: 'user-1', teamIds: ['team-1'] })
     mockSelectWhereLimit([{ role: 'member' }])
@@ -203,8 +208,6 @@ describe('POST /api/teams/[teamId]/artifacts — success', () => {
       downloadUrl: '',
     } as Awaited<ReturnType<typeof put>>)
     mockInsertValues()
-    // fire-and-forget fetch — always resolves so it doesn't block
-    mockFetch.mockResolvedValueOnce({ ok: true } as unknown as Response)
 
     const { POST } = await importArtifactsRoute()
     const fd = new FormData()
@@ -224,16 +227,9 @@ describe('POST /api/teams/[teamId]/artifacts — success', () => {
     expect(body.artifact.summary).toBeNull()
     // fileUrl must NOT be present
     expect('fileUrl' in body.artifact).toBe(false)
-    // fire-and-forget: fetch must have been called with enrich endpoint + secret
-    // give it a tick to allow void promise to schedule
+    // fire-and-forget: enrichArtifact must have been called with the new artifact id
     await new Promise((r) => setTimeout(r, 0))
-    expect(mockFetch).toHaveBeenCalledWith(
-      'https://app.example.com/api/enrich',
-      expect.objectContaining({
-        method: 'POST',
-        headers: expect.objectContaining({ 'X-Enrich-Secret': 'test-secret' }),
-      }),
-    )
+    expect(mockEnrichArtifact).toHaveBeenCalledWith('test-nanoid-id')
   })
 
   it('returns 201 with enrichmentStatus complete when tags+summary provided, skips enrichment fetch', async () => {
@@ -269,9 +265,9 @@ describe('POST /api/teams/[teamId]/artifacts — success', () => {
     expect(body.artifact.tags).toEqual(['ai', 'design'])
     expect(body.artifact.summary).toBe('An AI-generated image of a design.')
     expect('fileUrl' in body.artifact).toBe(false)
-    // enrichment fetch must NOT have been called
+    // enrichArtifact must NOT have been called (metadata was pre-provided)
     await new Promise((r) => setTimeout(r, 0))
-    expect(mockFetch).not.toHaveBeenCalled()
+    expect(mockEnrichArtifact).not.toHaveBeenCalled()
   })
 })
 
