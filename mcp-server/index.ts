@@ -1,2 +1,20 @@
-// Placeholder: MCP server entry point — implemented in Story 7.1
-// Registers stdio transport and tool handlers (publish_artifact, search_artifacts, get_artifact)
+import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
+import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
+import { registerTools } from './tools.js'
+
+const server = new McpServer({
+  name: 'artifact-hub',
+  version: '1.0.0',
+})
+
+registerTools(server)
+
+async function main(): Promise<void> {
+  const transport = new StdioServerTransport()
+  await server.connect(transport)
+}
+
+main().catch((err: unknown) => {
+  console.error('[artifact-hub-mcp] Fatal error:', err)
+  process.exit(1)
+})

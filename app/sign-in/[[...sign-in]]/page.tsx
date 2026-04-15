@@ -1,4 +1,9 @@
-// Placeholder: Clerk sign-in component — implemented in Story 1.3
+import { SignIn } from '@clerk/nextjs'
+
 export default function SignInPage() {
-  return <div>Sign in — coming in Story 1.3</div>
+  return (
+    <div className="flex min-h-screen items-center justify-center">
+      <SignIn />
+    </div>
+  )
 }

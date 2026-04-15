@@ -1,11 +1,21 @@
-import { NextResponse } from 'next/server'
-import type { NextRequest } from 'next/server'
+import { clerkMiddleware, createRouteMatcher } from '@clerk/nextjs/server'
 
-// Placeholder: Clerk middleware added in Story 1.3
-export function middleware(_request: NextRequest) {
-  return NextResponse.next()
-}
+const isPublicRoute = createRouteMatcher([
+  '/sign-in(.*)',
+  '/sign-up(.*)',
+])
+
+export default clerkMiddleware(async (auth, request) => {
+  if (!isPublicRoute(request)) {
+    await auth.protect()
+  }
+})
 
 export const config = {
-  matcher: ['/((?!_next/static|_next/image|favicon.ico).*)'],
+  matcher: [
+    // Skip Next.js internals and all static files
+    '/((?!_next|[^?]*\\.(?:html?|css|js(?!on)|jld(?!on)|bmp|tiff?|gif|png|jpe?g|svg|ttf|ico|cur|heic|webp|avif)).*)',
+    // Always run for API routes
+    '/(api|trpc)(.*)',
+  ],
 }

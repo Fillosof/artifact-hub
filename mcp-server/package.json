@@ -2,12 +2,16 @@
   "name": "artifact-hub-mcp-server",
   "version": "1.0.0",
   "type": "module",
-  "main": "index.ts",
+  "main": "dist/index.js",
   "scripts": {
     "build": "tsc",
     "start": "node dist/index.js"
   },
   "dependencies": {
-    "@modelcontextprotocol/sdk": "1.29.0"
+    "@modelcontextprotocol/sdk": "1.29.0",
+    "zod": "^3.24.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.0.0"
   }
 }

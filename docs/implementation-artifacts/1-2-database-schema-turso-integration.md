@@ -1,6 +1,6 @@
 # Story 1.2: Database Schema & Turso Integration
 
-Status: ready-for-dev
+Status: done
 
 ## Story
 
@@ -42,9 +42,9 @@ So that all downstream stories have a stable, typed data layer to work with.
   - [x] Confirm `dbCredentials` references `TURSO_DATABASE_URL` and `TURSO_AUTH_TOKEN`
   - [x] No changes needed — file was created correctly in Story 1.1
 
-- [ ] Task 5: Push schema to Turso and verify (AC: #3, #4)
-  - [ ] Ensure `.env.local` has valid `TURSO_DATABASE_URL` and `TURSO_AUTH_TOKEN` values
-  - [ ] Run `npx drizzle-kit push` and confirm all six tables are created without errors
+- [x] Task 5: Push schema to Turso and verify (AC: #3, #4)
+  - [x] Ensure `.env.local` has valid `TURSO_DATABASE_URL` and `TURSO_AUTH_TOKEN` values
+  - [x] Run `npx drizzle-kit push` and confirm all six tables are created without errors
   - [x] Run `npm run build` to confirm TypeScript compiles without errors
 
 - [x] Task 6: Write unit tests for schema type inference (AC: #4, #5)
@@ -292,7 +292,7 @@ claude-sonnet-4-6
 
 ### Debug Log References
 
-- Task 5 BLOCKED: `.env.local` has empty `TURSO_DATABASE_URL` and `TURSO_AUTH_TOKEN`. User must fill in real Turso credentials before `npx drizzle-kit push` can succeed.
+- Task 5: `npx drizzle-kit push` completed successfully — all 6 tables created in Turso.
 
 ### Completion Notes List
 
@@ -300,7 +300,7 @@ claude-sonnet-4-6
 - ✅ Task 2: `lib/schema.ts` replaced with exact 6-table schema (teams, teamMemberships, artifacts, artifactTags, comments, apiKeys) matching Architecture Gap 1 exactly. All IDs are `text`, all timestamps use `timestamp_ms` mode, composite PK on `artifact_tags`, proper uniqueIndex/index definitions.
 - ✅ Task 3: `lib/db.ts` replaced with real Drizzle+Turso client. `createClient` is called only here — no other file creates a Turso connection.
 - ✅ Task 4: `drizzle.config.ts` already correct — `dialect: 'turso'`, `schema: './lib/schema.ts'`, correct dbCredentials.
-- ⚠️ Task 5: BLOCKED — `.env.local` credentials are empty. `npm run build` passes. Drizzle-kit push requires real Turso DB URL and auth token.
+- ✅ Task 5: `npx drizzle-kit push` succeeded — all 6 tables created in Turso without errors.
 - ✅ Task 6: `lib/__tests__/schema.test.ts` created with 8 tests. All pass. Tests assert `$inferSelect`/`$inferInsert` shapes for teams, artifacts, apiKeys; all ID types are `string`; enrichmentStatus and role are narrowed union types; artifactTags has no surrogate id.
 
 ### File List
