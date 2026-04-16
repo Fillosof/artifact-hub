@@ -53,7 +53,7 @@ export async function enrichArtifact(artifactId: string): Promise<void> {
   let summary: string
   try {
     const message = await anthropic.messages.create({
-      model: 'claude-3-5-haiku-20241022',
+      model: process.env.CLAUDE_MODEL ?? 'claude-haiku-4-5',
       max_tokens: 512,
       messages: [
         {
@@ -74,7 +74,8 @@ export async function enrichArtifact(artifactId: string): Promise<void> {
       throw new Error('Unexpected Claude response content type')
     }
 
-    const parsed = JSON.parse(block.text) as { tags: string[]; summary: string }
+    const rawText = block.text.replace(/^```(?:json)?\s*/i, '').replace(/\s*```\s*$/i, '').trim()
+    const parsed = JSON.parse(rawText) as { tags: string[]; summary: string }
     tags = normalizeTags(Array.isArray(parsed.tags) ? parsed.tags : [])
     summary = typeof parsed.summary === 'string' ? parsed.summary : ''
   } catch (err) {

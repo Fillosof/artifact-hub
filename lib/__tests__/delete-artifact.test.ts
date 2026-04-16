@@ -98,10 +98,10 @@ describe('DELETE /api/artifacts/[artifactId]', () => {
     expect(body.error).toBe('Only team admins can delete artifacts')
   })
 
-  it('returns 403 when caller is a member but not admin', async () => {
+  it('returns 403 when caller is a member but not admin and not the creator', async () => {
     mockResolveAuth.mockResolvedValueOnce({ userId: 'user-1', teamIds: ['team-1'] })
-    // Artifact lookup
-    mockSelectWhereLimit([{ id: 'art-1', teamId: 'team-1' }])
+    // Artifact lookup — createdBy is a different user
+    mockSelectWhereLimit([{ id: 'art-1', teamId: 'team-1', createdBy: 'other-user' }])
     // Membership lookup — role is member
     mockSelectWhereLimit([{ role: 'member' }])
 
@@ -109,7 +109,7 @@ describe('DELETE /api/artifacts/[artifactId]', () => {
     expect(res.status).toBe(403)
     const body = await res.json()
     expect(body.code).toBe('FORBIDDEN')
-    expect(body.error).toBe('Only team admins can delete artifacts')
+    expect(body.error).toBe('Only team admins or the artifact creator can delete artifacts')
   })
 
   it('returns 403 when membership row is missing entirely', async () => {

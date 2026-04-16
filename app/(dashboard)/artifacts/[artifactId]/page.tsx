@@ -134,7 +134,7 @@ export default async function ArtifactDetailPage({ params }: ArtifactDetailPageP
             <Download className="h-3.5 w-3.5" />
             Download
           </a>
-          {isAdmin && (
+          {(isAdmin || isOwner) && (
             <DeleteArtifactButton artifactId={artifact.id} artifactTitle={artifact.title} />
           )}
         </div>

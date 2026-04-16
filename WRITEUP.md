@@ -51,7 +51,20 @@ Publishing an artifact is fast: the file is stored, a DB row is inserted with `e
 
 ### MCP server with stdio transport
 
-The MCP server uses the `@modelcontextprotocol/sdk` with `StdioServerTransport`, which is the mechanism Claude Desktop uses to talk to local tools. Three tools are exposed: `publish_artifact` (multipart upload via API key), `search_artifacts` (keyword + type filter), and `get_artifact` (full metadata + comments). API keys are stored only as SHA-256 hex hashes in the database — plain-text keys are shown once at creation time and never again.
+The MCP server uses the `@modelcontextprotocol/sdk` with `StdioServerTransport`, which is the mechanism Claude Desktop uses to talk to local tools. Tools exposed:
+
+| Tool | Description |
+|---|---|
+| `publish_artifact` | Multipart text upload via API key |
+| `publish_artifact_from_file` | Publishes a local file with SHA-256 integrity verification |
+| `search_artifacts` | Keyword + type + tag filter across one or all teams |
+| `get_artifact` | Full metadata + comments; **saves the artifact file locally** to `./downloads/` (or `ARTIFACT_HUB_DOWNLOAD_DIR` env var) via the authenticated `/api/files/` proxy |
+| `start_artifact_draft` | Opens a chunked draft for large content |
+| `append_artifact_chunk` | Appends a chunk to an open draft |
+| `finalize_artifact` | Verifies integrity and publishes a completed draft |
+| `list_teams` | Lists all teams the caller is a member of |
+
+`get_artifact` downloads the binary (or text) file through the authenticated server-side proxy and writes it to disk — the raw Vercel Blob URL is never exposed. API keys are stored only as SHA-256 hex hashes in the database — plain-text keys are shown once at creation time and never again.
 
 ### shadcn/ui + Tailwind CSS v4
 
@@ -123,8 +136,9 @@ Add the following block to your Claude Desktop config file:
       "command": "node",
       "args": ["/absolute/path/to/repo-root/mcp-server/dist/index.js"],
       "env": {
-        "ARTIFACT_HUB_API_URL": "https://your-deployment.vercel.app",
-        "ARTIFACT_HUB_API_KEY": "your-api-key-from-settings-page"
+        "ARTIFACT_HUB_API_URL": "https://artifact-hub-theta.vercel.app",
+        "ARTIFACT_HUB_API_KEY": "your-api-key-from-settings-page",
+        "ARTIFACT_HUB_DOWNLOAD_DIR": "/absolute/path/to/downloads"
       }
     }
   }
@@ -136,7 +150,8 @@ Steps:
 2. In the Artifact Hub UI, go to Settings → API Keys → Generate Key. Copy the key (shown only once).
 3. Replace `/absolute/path/to/repo-root` with the real absolute path on your machine.
 4. Replace `ARTIFACT_HUB_API_URL` with your Vercel URL (or `http://localhost:3000` for local testing).
-5. Restart Claude Desktop — the `artifact-hub` tools appear in the tool list.
+5. Optionally set `ARTIFACT_HUB_DOWNLOAD_DIR` to control where `get_artifact` saves files locally (defaults to `mcp-server/downloads/`).
+6. Restart Claude Desktop — the `artifact-hub` tools appear in the tool list.
 
 ---
 

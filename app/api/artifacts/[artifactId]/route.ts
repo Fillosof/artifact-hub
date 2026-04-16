@@ -22,9 +22,9 @@ export async function DELETE(
 
   const { artifactId } = await params
 
-  // Fetch artifact to verify it exists and get its teamId
+  // Fetch artifact to verify it exists and get its teamId and creator
   const [artifact] = await db
-    .select({ id: artifacts.id, teamId: artifacts.teamId })
+    .select({ id: artifacts.id, teamId: artifacts.teamId, createdBy: artifacts.createdBy })
     .from(artifacts)
     .where(eq(artifacts.id, artifactId))
     .limit(1)
@@ -48,9 +48,10 @@ export async function DELETE(
     .where(and(eq(teamMemberships.teamId, artifact.teamId), eq(teamMemberships.userId, userId)))
     .limit(1)
 
-  if (!membership || membership.role !== 'admin') {
+  const isArtifactOwner = artifact.createdBy === userId
+  if (!membership || (membership.role !== 'admin' && !isArtifactOwner)) {
     return NextResponse.json(
-      { error: 'Only team admins can delete artifacts', code: 'FORBIDDEN' },
+      { error: 'Only team admins or the artifact creator can delete artifacts', code: 'FORBIDDEN' },
       { status: 403 },
     )
   }
